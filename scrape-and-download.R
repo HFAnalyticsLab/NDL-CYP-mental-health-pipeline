@@ -10,7 +10,7 @@ pacman::p_load(tidyverse,DescTools,lubridate,pbapply,here,rvest,downloader,curl)
 rm(list = ls())
 
 #Set directory where inputs are saved (*ACTION*)
-rawdatadir <- "M:/Analytics/CYP MH/England/MHSDS/"
+rawdatadir <- "/Users/sgpeytrignet/Documents/MHSDS data/"
 
 #Create sub-directories if not already there
 setwd(rawdatadir)
@@ -23,9 +23,9 @@ if (main_name %in% list.dirs(path = ".", full.names = FALSE, recursive = FALSE))
 }
 #Eating disorders (*ACTION*)
 ed_name <- "Eating disorders files"
-if (main_name %in% list.dirs(path = ".", full.names = FALSE, recursive = FALSE)){
+if (ed_name %in% list.dirs(path = ".", full.names = FALSE, recursive = FALSE)){
 } else {
-  dir.create(main_name)
+  dir.create(ed_name)
 }
 
 ######################################################
@@ -177,7 +177,7 @@ MHSDS_monthly_series_download <- function(monthyr){
 }
 
 #Test function
-MHSDS_monthly_series_download("june 1996")
+MHSDS_monthly_series_download("december 2020")
 
 #Choose months
 all_months <- monthly_names %>%

@@ -20,22 +20,20 @@ library("curl")
 rm(list = ls())
 
 #Set directory where inputs are saved (*ACTION*)
-rawdatadir <- "M:/Analytics/CYP MH/England/MHSDS/" #Replace with name of your data folder
-main_name <- "Main performance files" #Replace with the name of your sub-folder for main performance files
-ed_name <- "Eating disorders files" #Replace with the name of your sub-folder for eating disorder files
+source(here::here("0. File locations.R"))
 
 #Create sub-directories if not already there
-setwd(rawdatadir)
+#setwd(rawdatadir)
 
 #Main performance files
-if (main_name %in% list.dirs(path = ".", full.names = FALSE, recursive = FALSE)){
+if (main_name %in% list.dirs(path = rawdatadir, full.names = FALSE, recursive = FALSE)){
 } else {
-  dir.create(main_name)
+  dir.create(paste0(rawdatadir,main_name))
 }
 #Eating disorders
-if (ed_name %in% list.dirs(path = ".", full.names = FALSE, recursive = FALSE)){
+if (ed_name %in% list.dirs(path = rawdatadir, full.names = FALSE, recursive = FALSE)){
 } else {
-  dir.create(ed_name)
+  dir.create(paste0(rawdatadir,ed_name))
 }
 
 #############################################################
@@ -45,6 +43,10 @@ if (ed_name %in% list.dirs(path = ".", full.names = FALSE, recursive = FALSE)){
 nr_files_before <- sapply(c(paste0(rawdatadir,main_name),
                           paste0(rawdatadir,ed_name)),
                         function(dir){length(list.files(dir,pattern='csv'))})
+
+is_there_pooled_data <- sapply(c(paste0(rawdatadir,main_name,"/Pooled"),
+                                 paste0(rawdatadir,ed_name,"/Pooled")),
+                               function(dir){length(list.files(dir,pattern='csv'))})
 
 ######################################################
 ################ SCRAPE LANDING PAGES ################
@@ -220,8 +222,9 @@ nr_files_after <- sapply(c(paste0(rawdatadir,main_name),
 
 ### Main performance files
 
-if (nr_files_before[which(names(nr_files_before)==paste0(rawdatadir,main_name))] <
-  nr_files_after[which(names(nr_files_after)==paste0(rawdatadir,main_name))]){
+if ((nr_files_before[which(names(nr_files_before)==paste0(rawdatadir,main_name))] <
+  nr_files_after[which(names(nr_files_after)==paste0(rawdatadir,main_name))])|
+  is_there_pooled_data[which(names(is_there_pooled_data)==paste0(rawdatadir,main_name,"/Pooled"))]==0){
   #New files were added, so create new pooled files
     #Read in all files and append
   basedir_main <- paste0(rawdatadir,main_name)
@@ -233,9 +236,9 @@ if (nr_files_before[which(names(nr_files_before)==paste0(rawdatadir,main_name))]
   })
   big_data_main <- rbindlist(l = big_list_main, use.names = T, fill = T)
     #Create new sub-folder if needed
-  if ("Pooled" %in% list.dirs(path = ".", full.names = FALSE, recursive = FALSE)){
+  if ("Pooled" %in% list.dirs(path = paste0(rawdatadir,main_name), full.names = FALSE, recursive = FALSE)){
   } else {
-    dir.create("Pooled")
+    dir.create(paste0(rawdatadir,main_name,"/Pooled"))
   }
     #Save new pooled file
   fwrite(big_data_main, paste0(rawdatadir,main_name,"/Pooled/MHSDS_main_pooled.csv"), row.names = F, sep = ",")
@@ -247,8 +250,9 @@ if (nr_files_before[which(names(nr_files_before)==paste0(rawdatadir,main_name))]
 
 ### Eating disorder files
 
-if (nr_files_before[which(names(nr_files_before)==paste0(rawdatadir,ed_name))] <
-    nr_files_after[which(names(nr_files_after)==paste0(rawdatadir,ed_name))]){
+if ((nr_files_before[which(names(nr_files_before)==paste0(rawdatadir,ed_name))] <
+    nr_files_after[which(names(nr_files_after)==paste0(rawdatadir,ed_name))])|
+    is_there_pooled_data[which(names(is_there_pooled_data)==paste0(rawdatadir,ed_name,"/Pooled"))]==0){
   #New files were added, so create new pooled files
   #Read in all files and append
   basedir_ed <- paste0(rawdatadir,ed_name)
@@ -260,9 +264,9 @@ if (nr_files_before[which(names(nr_files_before)==paste0(rawdatadir,ed_name))] <
   })
   big_data_ed <- rbindlist(l = big_list_ed, use.names = T, fill = T)
   #Save pooled file in new folder
-  if ("Pooled" %in% list.dirs(path = ".", full.names = FALSE, recursive = FALSE)){
+  if ("Pooled" %in% list.dirs(path = paste0(rawdatadir,ed_name), full.names = FALSE, recursive = FALSE)){
   } else {
-    dir.create("Pooled")
+    dir.create(paste0(rawdatadir,ed_name,"/Pooled"))
   }
   fwrite(big_data_ed, paste0(rawdatadir,ed_name,"/Pooled/MHSDS_ED_pooled.csv"), row.names = F, sep = ",")
   rm(basedir_ed,file_names_ed,big_list_ed,big_data_ed)
@@ -272,4 +276,4 @@ if (nr_files_before[which(names(nr_files_before)==paste0(rawdatadir,ed_name))] <
   print("No new files were added")
 }
 
-rm(rawdatadir,main_name,ed_name,nr_files_before,nr_files_after)
+rm(rawdatadir,main_name,ed_name,nr_files_before,nr_files_after,is_there_pooled_data)

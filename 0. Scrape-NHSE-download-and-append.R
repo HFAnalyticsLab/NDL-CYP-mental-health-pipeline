@@ -1,32 +1,50 @@
 #######################################
+################ To-do ################
+#######################################
+
+#######################################
 ################ SETUP ################
 #######################################
 
 #Load packages
-if (!require("pacman")) install.packages("pacman")
-pacman::p_load(tidyverse,DescTools,lubridate,pbapply,here,rvest,downloader,curl)
+library("tidyverse")
+library("lubridate")
+library("DescTools")
+library("pbapply")
+library("here")
+library("rvest")
+library("downloader")
+library("curl")
 
 #Clean up the global environment
 rm(list = ls())
 
 #Set directory where inputs are saved (*ACTION*)
-rawdatadir <- "/Users/sgpeytrignet/Documents/MHSDS data/"
+rawdatadir <- "M:/Analytics/CYP MH/England/MHSDS/" #Replace with name of your data folder
+main_name <- "Main performance files" #Replace with the name of your sub-folder for main performance files
+ed_name <- "Eating disorders files" #Replace with the name of your sub-folder for eating disorder files
 
 #Create sub-directories if not already there
 setwd(rawdatadir)
 
-#Main performance files (*ACTION*)
-main_name <- "Main performance files"
+#Main performance files
 if (main_name %in% list.dirs(path = ".", full.names = FALSE, recursive = FALSE)){
 } else {
   dir.create(main_name)
 }
-#Eating disorders (*ACTION*)
-ed_name <- "Eating disorders files"
+#Eating disorders
 if (ed_name %in% list.dirs(path = ".", full.names = FALSE, recursive = FALSE)){
 } else {
   dir.create(ed_name)
 }
+
+#############################################################
+################ Count number of files (PRE) ################
+#############################################################
+
+nr_files_before <- sapply(c(paste0(rawdatadir,main_name),
+                          paste0(rawdatadir,ed_name)),
+                        function(dir){length(list.files(dir,pattern='csv'))})
 
 ######################################################
 ################ SCRAPE LANDING PAGES ################
@@ -59,6 +77,7 @@ monthly_names <- read_html(nhse_link_series) %>%
          month_name=trimws(month_name, "both")) %>%
   mutate(.,month_year=paste(month_name,first_year,sep=" "),
          wanted=ifelse(month_name!="",1,0)) %>% #Indicator if we want to download this
+  mutate(.,month_year=ifelse(name=="cyp april 2018 to march 2019 experimental statistics","april 2018 to march 2019",month_year)) %>% 
   select(.,-c("month_name_perf","month_name_final","first_year"))
 
 #Scrape all download links
@@ -71,12 +90,12 @@ monthly_links <- read_html(nhse_link_series) %>%
   mutate(.,index=1:n())
 
 #Get only the links from subset we want and ann abbreviated month
-month_abbv <- data.frame(month_name=c("january","february","march","april","may","june","july","august","september","october","november","december"),
+months_abbv <- data.frame(month_name=c("january","february","march","april","may","june","july","august","september","october","november","december"),
                          month_abbv=c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))
 monthly_names <- left_join(monthly_names,
                                   monthly_links,by="index") %>%
-  left_join(.,month_abbv,by="month_name")
-rm(monthly_links)
+  left_join(.,months_abbv,by="month_name")
+rm(monthly_links,months_abbv)
 
 #Filter out unwanted links
 monthly_names <- monthly_names %>%
@@ -177,7 +196,7 @@ MHSDS_monthly_series_download <- function(monthyr){
 }
 
 #Test function
-MHSDS_monthly_series_download("december 2020")
+#MHSDS_monthly_series_download("december 2020")
 
 #Choose months
 all_months <- monthly_names %>%
@@ -185,3 +204,72 @@ all_months <- monthly_names %>%
 
 #Run function
 pblapply(all_months,MHSDS_monthly_series_download)
+rm(all_months,nhse_link_series,monthly_names,MHSDS_monthly_series_download)
+
+##############################################################
+################ Count number of files (POST) ################
+##############################################################
+
+nr_files_after <- sapply(c(paste0(rawdatadir,main_name),
+                            paste0(rawdatadir,ed_name)),
+                          function(dir){length(list.files(dir,pattern='csv'))})
+
+####################################################################
+################ Create a new pooled file if needed ################
+####################################################################
+
+### Main performance files
+
+if (nr_files_before[which(names(nr_files_before)==paste0(rawdatadir,main_name))] <
+  nr_files_after[which(names(nr_files_after)==paste0(rawdatadir,main_name))]){
+  #New files were added, so create new pooled files
+    #Read in all files and append
+  basedir_main <- paste0(rawdatadir,main_name)
+  file_names_main <- list.files(path = basedir_main, pattern= '*.csv', full.names = F, recursive = F)
+  big_list_main <- lapply(file_names_main, function(file_name){
+    dat <- fread(file = file.path(basedir_main, file_name), header = T, colClasses = "character")
+    dat$filename <- gsub('.csv', '', file_name)
+    return(dat)
+  })
+  big_data_main <- rbindlist(l = big_list_main, use.names = T, fill = T)
+    #Create new sub-folder if needed
+  if ("Pooled" %in% list.dirs(path = ".", full.names = FALSE, recursive = FALSE)){
+  } else {
+    dir.create("Pooled")
+  }
+    #Save new pooled file
+  fwrite(big_data_main, paste0(rawdatadir,main_name,"/Pooled/MHSDS_main_pooled.csv"), row.names = F, sep = ",")
+  rm(basedir_main,file_names_main,big_list_main,big_data_main)
+} else {
+  #No new files were added
+  print("No new files were added")
+}
+
+### Eating disorder files
+
+if (nr_files_before[which(names(nr_files_before)==paste0(rawdatadir,ed_name))] <
+    nr_files_after[which(names(nr_files_after)==paste0(rawdatadir,ed_name))]){
+  #New files were added, so create new pooled files
+  #Read in all files and append
+  basedir_ed <- paste0(rawdatadir,ed_name)
+  file_names_ed <- list.files(path = basedir_ed, pattern= '*.csv', full.names = F, recursive = F)
+  big_list_ed <- lapply(file_names_ed, function(file_name){
+    dat <- fread(file = file.path(basedir_ed, file_name), header = T, colClasses = "character")
+    dat$filename <- gsub('.csv', '', file_name)
+    return(dat)
+  })
+  big_data_ed <- rbindlist(l = big_list_ed, use.names = T, fill = T)
+  #Save pooled file in new folder
+  if ("Pooled" %in% list.dirs(path = ".", full.names = FALSE, recursive = FALSE)){
+  } else {
+    dir.create("Pooled")
+  }
+  fwrite(big_data_ed, paste0(rawdatadir,ed_name,"/Pooled/MHSDS_ED_pooled.csv"), row.names = F, sep = ",")
+  rm(basedir_ed,file_names_ed,big_list_ed,big_data_ed)
+  
+} else {
+  #No new files were added
+  print("No new files were added")
+}
+
+rm(rawdatadir,main_name,ed_name,nr_files_before,nr_files_after)

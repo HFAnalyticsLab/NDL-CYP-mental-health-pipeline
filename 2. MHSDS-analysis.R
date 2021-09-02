@@ -6,6 +6,7 @@
 #Dashboard where we can select CCG/area for 2 or 3 charts
 #One panel for main and another for eating disorders
 #Take inspiration from their BI app (https://app.powerbi.com/view?r=eyJrIjoiZDA3ZTE0ZjgtMmI2Ni00ZTI5LThkODctZTg2ZjZjZTk2ZWE5IiwidCI6IjUwZjYwNzFmLWJiZmUtNDAxYS04ODAzLTY3Mzc0OGU2MjllMiIsImMiOjh9&pageName=ReportSection090d617b47d4597458ae)
+#Using flexdashboard template
 
 #######################################
 ################ SETUP ################
@@ -15,6 +16,9 @@
 library("tidyverse")
 library("lubridate")
 library("here")
+library("data.table")
+library("plotly")
+library("hrbrthemes")
 
 #Clean up the global environment
 rm(list = ls())
@@ -24,16 +28,12 @@ refresh_data <- "NO"
 
 if(refresh_data=="YES"){
   #Refresh data
-  source(here::here("0. Scrape-NHSE-download-and-append.R"))
+  source(here::here("1. Scrape-NHSE-download-and-append.R"))
   #Clean up the global environment
   rm(list = ls())
 } else if (refresh_data=="NO"){
+  source(here::here("0. File locations.R"))
 }
-
-#Set directory where inputs are saved
-rawdatadir <- "M:/Analytics/CYP MH/England/MHSDS/"
-main_name <- "Main performance files" #Replace with the name of your sub-folder for main performance files
-ed_name <- "Eating disorders files" #Replace with the name of your sub-folder for eating disorder files
 
 ##################################################
 ################ EXPLORE PRF FILE ################

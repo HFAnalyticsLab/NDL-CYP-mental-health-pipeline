@@ -5,6 +5,7 @@
 #Test on other computer
 #Dashboard where we can select CCG/area for 2 or 3 charts
 #One panel for main and another for eating disorders
+#Take inspiration from their BI app (https://app.powerbi.com/view?r=eyJrIjoiZDA3ZTE0ZjgtMmI2Ni00ZTI5LThkODctZTg2ZjZjZTk2ZWE5IiwidCI6IjUwZjYwNzFmLWJiZmUtNDAxYS04ODAzLTY3Mzc0OGU2MjllMiIsImMiOjh9&pageName=ReportSection090d617b47d4597458ae)
 
 #######################################
 ################ SETUP ################
